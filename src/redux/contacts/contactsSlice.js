@@ -4,7 +4,7 @@ import {
   addContact,
   deleteContact,
   editContact,
-} from '../redux/operations';
+} from '../../redux/contacts/operations';
 
 const handlePending = state => {
   state.isLoading = true;

@@ -1,53 +1,54 @@
-import React, { useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import {
-  selectContacts,
-  selectError,
-  selectIsLoading,
-} from '../../redux/selectors';
-import { fetchContacts } from '../../redux/operations';
-import { Filter, ContactList, FormikForm } from 'components';
-import {
-  Layout,
-  Title,
-  Notification,
-  ContactsTitle,
-  ContactListBox,
-} from './App.styled';
+import { lazy, useEffect } from 'react';
+import { Route, Routes } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 
-import { clearContactAdded } from '../../redux/contactsSlice';
+import { Layout } from 'components';
+import { PrivateRoute } from '../PrivateRoute';
+import { RestrictedRoute } from '../RestrictedPoute';
+import { useAuth } from 'hooks';
+import { refreshUser } from '../../redux/auth/operations';
+
+const HomePage = lazy(() => import('../../pages/Home/Home'));
+const RegisterPage = lazy(() => import('../../pages/Register/Register'));
+const LoginPage = lazy(() => import('../../pages/Login/Login'));
+const ContactsPage = lazy(() => import('../../pages/Contacts/Contacts'));
 
 export function App() {
   const dispatch = useDispatch();
-  const contacts = useSelector(selectContacts);
-  const isLoading = useSelector(selectIsLoading);
-  const error = useSelector(selectError);
-  const isContactAdded = useSelector(state => state.contacts.isContactAdded);
+  const { isRefreshing } = useAuth();
 
   useEffect(() => {
-    dispatch(fetchContacts());
+    dispatch(refreshUser());
   }, [dispatch]);
 
-  useEffect(() => {
-    if (isContactAdded) {
-      dispatch(clearContactAdded());
-    }
-  }, [isContactAdded, dispatch]);
-
-  return (
-    <Layout>
-      <Title>Phonebook</Title>
-      <FormikForm />
-      <ContactsTitle>Contacts</ContactsTitle>
-      {contacts.length ? (
-        <ContactListBox>
-          <Filter />
-          <ContactList />
-        </ContactListBox>
-      ) : (
-        <Notification>No any contacts in phonebook</Notification>
-      )}
-      {isLoading && !error && <h2>Loading...</h2>}
-    </Layout>
+  return isRefreshing ? (
+    <b>Refreshing user...</b>
+  ) : (
+    <Routes>
+      <Route path="/" element={<Layout />}>
+        <Route index element={<HomePage />} />
+        <Route
+          path="register"
+          element={
+            <RestrictedRoute
+              redirectTo="/contacts"
+              component={<RegisterPage />}
+            />
+          }
+        />
+        <Route
+          path="login"
+          element={
+            <RestrictedRoute redirectTo="/contacts" component={<LoginPage />} />
+          }
+        />
+        <Route
+          path="contacts"
+          element={
+            <PrivateRoute redirectTo="/login" component={<ContactsPage />} />
+          }
+        />
+      </Route>
+    </Routes>
   );
 }
